@@ -5,41 +5,33 @@ using System.Threading.Tasks;
 
 namespace Aop.Profiler.EventProcessing
 {
-    public abstract class EventBatcher9000 : IProcessProfilerEvents, IDisposable
+    public class EventBatchProcessor : IProcessProfilerEvents, IDisposable
     {
         private readonly int _batchSizeLimit;
         private readonly TimeSpan _period;
         private readonly BoundedConcurrentQueue<IDictionary<string,object>> _queue;
         private readonly Queue<IDictionary<string, object>> _waitingBatch = new Queue<IDictionary<string, object>>();
         private readonly object _stateLock = new object();
-        private readonly PortableTimer _timer;
+        private readonly WakeTimer _timer;
         private bool _unloading;
-        private bool _started;
-        private readonly Func<IList<IDictionary<string, object>>, Task> _batchDelegate;
+        private readonly Func<Queue<IDictionary<string, object>>, Task> _processEvents;
 
-        //protected EventBatcher9000(uint batchSizeLimit, TimeSpan period)
-        //{
-        //    _batchSizeLimit = batchSizeLimit;
-        //    _queue = new BoundedConcurrentQueue<IDictionary<string,object>>(batchSizeLimit);
-            
-        //    _timer = new PortableTimer(cancel => OnTick());
-        //    _period = period;
-        //}
-
-        protected EventBatcher9000(int batchSizeLimit, TimeSpan period, uint queueLimit)
-            //: this(batchSizeLimit, period)
+        public EventBatchProcessor(Func<Queue<IDictionary<string, object>>, Task> processEvents, int batchSizeLimit, TimeSpan period, uint queueLimit)
         {
+            _processEvents = processEvents;
             _batchSizeLimit = batchSizeLimit;
-            _timer = new PortableTimer(cancel => OnTick());
+            _timer = new WakeTimer(cancel => ProcessBatch());
             _period = period;
             _queue = new BoundedConcurrentQueue<IDictionary<string,object>>(queueLimit);
+
+            _timer.Start(period);
         }
 
         private void CloseAndFlush()
         {
             lock (_stateLock)
             {
-                if (!_started || _unloading)
+                if (_unloading)
                 {
                     return;
                 }
@@ -49,7 +41,7 @@ namespace Aop.Profiler.EventProcessing
 
             _timer.Dispose();
 
-            ResetSyncContextAndWait(OnTick);
+            ResetSyncContextAndWait(ProcessBatch);
         }
 
         private void ResetSyncContextAndWait(Func<Task> taskFactory)
@@ -82,26 +74,15 @@ namespace Aop.Profiler.EventProcessing
             CloseAndFlush();
         }
 
-        protected virtual void EmitBatch(IEnumerable<IDictionary<string,object>> events)
-        {
-        }
-
-        protected virtual async Task EmitBatchAsync(IEnumerable<IDictionary<string,object>> events)
-        {
-            EmitBatch(events);
-        }
-
-        private async Task OnTick()
+        private async Task ProcessBatch()
         {
             try
             {
-                bool batchWasFull;
+                bool wasFullBatch;
 
                 do
                 {
-                    IDictionary<string,object> next;
-
-                    while (_waitingBatch.Count < _batchSizeLimit && _queue.TryDequeue(out next))
+                    while (_waitingBatch.Count < _batchSizeLimit && _queue.TryDequeue(out var next))
                     {
                         _waitingBatch.Enqueue(next);
                     }
@@ -111,15 +92,16 @@ namespace Aop.Profiler.EventProcessing
                         return;
                     }
 
-                    await EmitBatchAsync(_waitingBatch);
+                    await _processEvents(_waitingBatch);
 
-                    batchWasFull = _waitingBatch.Count >= _batchSizeLimit;
+                    wasFullBatch = _waitingBatch.Count >= _batchSizeLimit;
 
                     _waitingBatch.Clear();
                 }
-                while (batchWasFull); // Otherwise, allow the period to elapse
+                while (wasFullBatch);
             }
-            catch (Exception ex)
+            // ReSharper disable once EmptyGeneralCatchClause
+            catch
             {
             }
             finally
@@ -149,22 +131,6 @@ namespace Aop.Profiler.EventProcessing
             if (_unloading)
             {
                 return;
-            }
-
-            if (!_started)
-            {
-                lock (_stateLock)
-                {
-                    if (_unloading)
-                    {
-                        return;
-                    }
-
-                    if (!_started)
-                    {
-                        _started = true;
-                    }
-                }
             }
 
             _queue.TryEnqueue(logEvent);

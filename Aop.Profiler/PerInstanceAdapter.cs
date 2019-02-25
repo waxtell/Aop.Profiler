@@ -22,56 +22,61 @@ namespace Aop.Profiler
                             <
                                 (
                                     Expectation expectation,
-                                    Action<CaptureOptions, DateTime, IInvocation>
+                                    Action<DateTime, IInvocation>
                                 )
                             >
                             _expectations = new List
                             <
                                 (
                                     Expectation,
-                                    Action<CaptureOptions, DateTime, IInvocation>
+                                    Action<DateTime, IInvocation>
                                 )
                             >();
 
-        private void Enqueue(CaptureOptions captureOptions, DateTime startUtc, DateTime endUtc, IInvocation invocation)
+        private void Enqueue(DateTime startUtc, DateTime endUtc, IInvocation invocation, object returnValue)
         {
             try
             {
                 var profilerEvent = new Dictionary<string, object>();
 
-                if (captureOptions.HasFlag(CaptureOptions.ThreadId))
+                if (_captureOptions.HasFlag(CaptureOptions.ThreadId))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.ThreadId), Thread.CurrentThread.ManagedThreadId);
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.StartDateTimeUtc))
+                if (_captureOptions.HasFlag(CaptureOptions.StartDateTimeUtc))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.StartDateTimeUtc), startUtc);
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.EndDateTimeUtc))
+                if (_captureOptions.HasFlag(CaptureOptions.EndDateTimeUtc))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.EndDateTimeUtc),endUtc);
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.Duration))
+                if (_captureOptions.HasFlag(CaptureOptions.Duration))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.Duration), endUtc.Subtract(startUtc));
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.SerializedInputParameters))
+                if (_captureOptions.HasFlag(CaptureOptions.SerializedInputParameters))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.SerializedInputParameters), JsonConvert.SerializeObject(invocation.Arguments));
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.MethodName))
+                if (_captureOptions.HasFlag(CaptureOptions.MethodName))
                 {
                     profilerEvent.Add(nameof(CaptureOptions.MethodName),invocation.Method.Name);
                 }
 
-                if (captureOptions.HasFlag(CaptureOptions.SerializedResult))
+                if (_captureOptions.HasFlag(CaptureOptions.SerializedResult))
                 {
-                    profilerEvent.Add(nameof(CaptureOptions.SerializedResult), JsonConvert.SerializeObject(invocation.ReturnValue));
+                    profilerEvent.Add(nameof(CaptureOptions.SerializedResult), JsonConvert.SerializeObject(returnValue));
+                }
+
+                if (_captureOptions.HasFlag(CaptureOptions.DeclaringTypeName))
+                {
+                    profilerEvent.Add(nameof(CaptureOptions.DeclaringTypeName), invocation.TargetType.FullName);
                 }
 
                 _eventProcessor.ProcessEvent(profilerEvent);
@@ -82,46 +87,46 @@ namespace Aop.Profiler
             }
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> BuildAsyncResultMarshaller<TReturn>()
+        private Action<DateTime, IInvocation> BuildAsyncResultEnqueueAction<TReturn>()
         {
             Expression
             <
-                Action<CaptureOptions, DateTime, IInvocation>
+                Action<DateTime, IInvocation>
             >
             expr =
-                (captureOptions, start, invocation) => (invocation.ReturnValue as Task<TReturn>)
+                (start, invocation) => (invocation.ReturnValue as Task<TReturn>)
                                                                 .ContinueWith
                                                                 (
-                                                                    i => Enqueue(captureOptions, start,DateTime.UtcNow,invocation)
+                                                                    i => Enqueue(start,DateTime.UtcNow,invocation, i.Result)
                                                                 );
 
             return expr.Compile();
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> BuildAsyncMarshaller()
+        private Action<DateTime, IInvocation> BuildAsyncEnqueueAction()
         {
             Expression
                 <
-                    Action<CaptureOptions, DateTime, IInvocation>
+                    Action<DateTime, IInvocation>
                 >
                 expr =
-                    (captureOptions, start, invocation) => (invocation.ReturnValue as Task)
+                    (start, invocation) => (invocation.ReturnValue as Task)
                         .ContinueWith
                         (
-                            i => Enqueue(captureOptions, start, DateTime.UtcNow, invocation)
+                            i => Enqueue(start, DateTime.UtcNow, invocation, null)
                         );
 
             return expr.Compile();
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> BuildSynchronousResultMarshaller()
+        private Action<DateTime, IInvocation> BuildSynchronousResultEnqueueAction()
         {
             Expression
                 <
-                    Action<CaptureOptions, DateTime, IInvocation>
+                    Action<DateTime, IInvocation>
                 >
                 expr =
-                    (captureOptions, start, invocation) => Enqueue(captureOptions, start,DateTime.UtcNow,invocation);
+                    (start, invocation) => Enqueue(start,DateTime.UtcNow,invocation,invocation.ReturnValue);
 
             return expr.Compile();
         }
@@ -135,7 +140,7 @@ namespace Aop.Profiler
                 var returnType = invocation.Method.ReturnType;
 
                 expectation = Expectation.FromInvocation(invocation,_captureOptions);
-                enqueue = GetMarshallerForType(returnType);
+                enqueue = GetEnqueueActionForType(returnType);
 
                 _expectations
                     .Add
@@ -154,17 +159,16 @@ namespace Aop.Profiler
             enqueue
                 .Invoke
                 (
-                    expectation.Options,
                     start,
                     invocation
                 );
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> GetMarshallerForType(Type tReturn)
+        private Action<DateTime, IInvocation> GetEnqueueActionForType(Type tReturn)
         {
             if (tReturn == typeof(Task))
             {
-                return BuildAsyncMarshaller();
+                return BuildAsyncEnqueueAction();
             }
 
             var returnType = tReturn?.GetTypeInfo();
@@ -175,21 +179,21 @@ namespace Aop.Profiler
 
                 if (gt == typeof(Task<>))
                 {
-                    return BuildAsyncResultMarshallerForType(returnType.GenericTypeArguments[0]);
+                    return BuildAsyncResultEnqueueActionForType(returnType.GenericTypeArguments[0]);
                 }
             }
 
-            return BuildSynchronousResultMarshaller();
+            return BuildSynchronousResultEnqueueAction();
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> BuildAsyncResultMarshallerForType(Type tReturn)
+        private Action<DateTime, IInvocation> BuildAsyncResultEnqueueActionForType(Type tReturn)
         {
             var mi = typeof(PerInstanceAdapter<T>)
-                        .GetMethod(nameof(BuildAsyncResultMarshaller), BindingFlags.NonPublic | BindingFlags.Instance);
+                        .GetMethod(nameof(BuildAsyncResultEnqueueAction), BindingFlags.NonPublic | BindingFlags.Instance);
 
             var miConstructed = mi?.MakeGenericMethod(tReturn);
 
-            return (Action<CaptureOptions, DateTime, IInvocation>)miConstructed?.Invoke(this, null);
+            return (Action<DateTime, IInvocation>)miConstructed?.Invoke(this, null);
         }
 
         public PerInstanceAdapter(T instance, IProcessProfilerEvents eventProcessor, CaptureOptions captureOptions = CaptureOptions.Default)

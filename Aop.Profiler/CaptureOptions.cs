@@ -12,6 +12,7 @@ namespace Aop.Profiler
         SerializedResult = 16,
         ThreadId = 32,
         MethodName = 64,
-        Default = StartDateTimeUtc | EndDateTimeUtc | Duration | MethodName
+        DeclaringTypeName = 128,
+        Default = StartDateTimeUtc | EndDateTimeUtc | Duration | MethodName | DeclaringTypeName
     }
 }

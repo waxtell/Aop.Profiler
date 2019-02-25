@@ -6,12 +6,14 @@ namespace Aop.Profiler.EventProcessing
     internal class BoundedConcurrentQueue<T> 
     {
         private readonly ConcurrentQueue<T> _queue = new ConcurrentQueue<T>();
-        private readonly uint _queueLimit;
-        private int _counter;
+        private readonly uint _maxCapacity;
 
-        public BoundedConcurrentQueue(uint queueLimit)
+        public int Count => _itemCount;
+        private volatile int _itemCount;
+
+        public BoundedConcurrentQueue(uint maxCapacity)
         {
-            _queueLimit = queueLimit;
+            _maxCapacity = maxCapacity;
         }
 
         public bool TryDequeue(out T item)
@@ -20,7 +22,7 @@ namespace Aop.Profiler.EventProcessing
 
             if (_queue.TryDequeue(out item))
             {
-                Interlocked.Decrement(ref _counter);
+                Interlocked.Decrement(ref _itemCount);
                 result = true;
             }
 
@@ -31,13 +33,13 @@ namespace Aop.Profiler.EventProcessing
         {
             var result = true;
 
-            if (Interlocked.Increment(ref _counter) <= _queueLimit)
+            if (Interlocked.Increment(ref _itemCount) <= _maxCapacity)
             {
                 _queue.Enqueue(item);
             }
             else
             {
-                Interlocked.Decrement(ref _counter);
+                Interlocked.Decrement(ref _itemCount);
                 result = false;
             }
 

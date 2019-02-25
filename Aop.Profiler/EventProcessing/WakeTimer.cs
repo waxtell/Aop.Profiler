@@ -4,18 +4,18 @@ using System.Threading.Tasks;
 
 namespace Aop.Profiler.EventProcessing
 {
-    internal class PortableTimer : IDisposable
+    internal class WakeTimer : IDisposable
     {
         private readonly object _stateLock = new object();
-        private readonly Func<CancellationToken, Task> _onTick;
+        private readonly Func<CancellationToken, Task> _work;
         private readonly CancellationTokenSource _cancel = new CancellationTokenSource();
 
         private bool _running;
         private bool _disposed;
 
-        public PortableTimer(Func<CancellationToken, Task> onTick)
+        public WakeTimer(Func<CancellationToken, Task> work)
         {
-            _onTick = onTick ?? throw new ArgumentNullException(nameof(onTick));
+            _work = work ?? throw new ArgumentNullException(nameof(work));
         }
 
         public void Start(TimeSpan interval)
@@ -29,14 +29,14 @@ namespace Aop.Profiler.EventProcessing
             {
                 if (_disposed)
                 {
-                    throw new ObjectDisposedException(nameof(PortableTimer));
+                    throw new ObjectDisposedException(nameof(WakeTimer));
                 }
 
                 Task
                     .Delay(interval, _cancel.Token)
                     .ContinueWith
                     (
-                        _ => OnTick(),
+                        _ => OnWake(),
                         CancellationToken.None,
                         TaskContinuationOptions.DenyChildAttach,
                         TaskScheduler.Default
@@ -44,7 +44,7 @@ namespace Aop.Profiler.EventProcessing
             }
         }
 
-        private async void OnTick()
+        private async void OnWake()
         {
             try
             {
@@ -70,7 +70,7 @@ namespace Aop.Profiler.EventProcessing
 
                 if (!_cancel.Token.IsCancellationRequested)
                 {
-                    await _onTick(_cancel.Token);
+                    await _work(_cancel.Token);
                 }
             }
             finally
