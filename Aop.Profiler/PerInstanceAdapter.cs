@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
-using Newtonsoft.Json;
 using Aop.Profiler.EventProcessing;
 
 namespace Aop.Profiler
@@ -37,49 +35,9 @@ namespace Aop.Profiler
         {
             try
             {
-                var profilerEvent = new Dictionary<string, object>();
+                var @event = EventFactory.Create(_captureOptions, startUtc, endUtc, invocation, returnValue);
 
-                if (_captureOptions.HasFlag(CaptureOptions.ThreadId))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.ThreadId), Thread.CurrentThread.ManagedThreadId);
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.StartDateTimeUtc))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.StartDateTimeUtc), startUtc);
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.EndDateTimeUtc))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.EndDateTimeUtc),endUtc);
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.Duration))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.Duration), endUtc.Subtract(startUtc));
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.SerializedInputParameters))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.SerializedInputParameters), JsonConvert.SerializeObject(invocation.Arguments));
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.MethodName))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.MethodName),invocation.Method.Name);
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.SerializedResult))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.SerializedResult), JsonConvert.SerializeObject(returnValue));
-                }
-
-                if (_captureOptions.HasFlag(CaptureOptions.DeclaringTypeName))
-                {
-                    profilerEvent.Add(nameof(CaptureOptions.DeclaringTypeName), invocation.TargetType.FullName);
-                }
-
-                _eventProcessor.ProcessEvent(profilerEvent);
+                _eventProcessor.ProcessEvent(@event);
             }
             // ReSharper disable once EmptyGeneralCatchClause
             catch

@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard1.3;net45</TargetFrameworks>
+    <Description>Per instance or per instance method aspect oriented profiler.</Description>
+    <PackageLicenseUrl>https://github.com/waxtell/Aop.Profiler/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/waxtell/Aop.Profiler</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/waxtell/Aop.Profiler.git</RepositoryUrl>
+    <PackageTags>Profiler Aspect Oriented Programming</PackageTags>
+    <PackageReleaseNotes>[1.0.0] Initial release</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,8 +9,6 @@ namespace Aop.Profiler
 {
     internal class Expectation
     {
-        public Guid Identifier { get; }
-
         private readonly string _methodName;
         private readonly Type _returnType;
         private readonly IEnumerable<Parameter> _parameters;
@@ -18,8 +16,6 @@ namespace Aop.Profiler
 
         private Expectation(string methodName, Type returnType, IEnumerable<Parameter> parameters, CaptureOptions captureOptions)
         {
-            Identifier = Guid.NewGuid();
-
             _methodName = methodName;
             _returnType = returnType;
             _parameters = parameters;
@@ -43,6 +39,8 @@ namespace Aop.Profiler
                             return Parameter.MatchAny();
                         case nameof(It.IsNotNull):
                             return Parameter.MatchNotNull();
+                        default:
+                            throw new NotSupportedException("Specified fuzzy match is not supported.");
                     }
                 }
             }

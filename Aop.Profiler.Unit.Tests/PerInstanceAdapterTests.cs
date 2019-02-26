@@ -87,7 +87,7 @@ namespace Aop.Profiler.Unit.Tests
         }
 
         [Fact]
-        public void SerializedResultInvokedMethodResult()
+        public void SerializedResultMatchesInvokedMethodResult()
         {
             var eventCount = 0;
             object serializedResult = null;
@@ -153,24 +153,7 @@ namespace Aop.Profiler.Unit.Tests
             Thread.Sleep(1000);
 
             Assert.Equal(1, eventCount);
-            Assert.Equal(BitCount((int) CaptureOptions.Default), itemCount);
-
-            int BitCount(int n)
-            {
-                var test = n;
-                var count = 0;
-
-                while (test != 0)
-                {
-                    if ((test & 1) == 1)
-                    {
-                        count++;
-                    }
-                    test >>= 1;
-                }
-
-                return count;
-            }
+            Assert.Equal(BitFunctions.CountSet((int) CaptureOptions.Default), itemCount);
 
             void EventProcessor(IDictionary<string, object> @event)
             {
