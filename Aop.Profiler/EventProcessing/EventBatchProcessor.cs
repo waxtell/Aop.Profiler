@@ -44,7 +44,7 @@ namespace Aop.Profiler.EventProcessing
             ResetSyncContextAndWait(ProcessBatch);
         }
 
-        private void ResetSyncContextAndWait(Func<Task> taskFactory)
+        private static void ResetSyncContextAndWait(Func<Task> taskFactory)
         {
             var prevContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(null);
@@ -128,6 +128,7 @@ namespace Aop.Profiler.EventProcessing
                 throw new ArgumentNullException(nameof(logEvent));
             }
 
+            // ReSharper disable once InconsistentlySynchronizedField
             if (_unloading)
             {
                 return;

@@ -8,6 +8,8 @@
     <RepositoryUrl>https://github.com/waxtell/Aop.Profiler.git</RepositoryUrl>
     <PackageTags>Profiler Aspect Oriented Programming</PackageTags>
     <PackageReleaseNotes>[1.0.0] Initial release</PackageReleaseNotes>
+    <Authors>Will Axtell</Authors>
+    <Company>Will Axtell</Company>
   </PropertyGroup>
 
   <ItemGroup>
