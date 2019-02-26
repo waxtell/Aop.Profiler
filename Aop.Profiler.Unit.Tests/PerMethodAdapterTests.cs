@@ -139,7 +139,7 @@ namespace Aop.Profiler.Unit.Tests
         }
 
         [Fact]
-        public void DefaultOptionsYieldExpectedDictionarySize()
+        public void VerboseOptionsYieldExpectedDictionarySize()
         {
             var eventCount = 0;
             var itemCount = 0;
@@ -203,7 +203,7 @@ namespace Aop.Profiler.Unit.Tests
                                 new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
-                            .Profile(x => x.SynchronousAction(It.IsAny<int>(), It.IsAny<int>(),It.IsAny<string>()), CaptureOptions.SerializedResult)
+                            .Profile(x => x.SynchronousAction(It.IsAny<int>(), It.IsAny<int>(),It.IsNotNull<string>()), CaptureOptions.SerializedResult)
                             .Object;
 
             proxy.SynchronousAction(0, 1, "two");
@@ -215,6 +215,32 @@ namespace Aop.Profiler.Unit.Tests
             {
                 eventCount++;
                 includesResult = @event.ContainsKey(nameof(CaptureOptions.SerializedResult));
+            }
+        }
+
+        [Fact]
+        public void SerializedParametersDoesNotThrowForPropertyGetter()
+        {
+            var eventCount = 0;
+            object serializedInput = null;
+
+            var proxy = new PerMethodAdapter<IForTestingPurposes>
+                            (
+                                new ForTestingPurposes(),
+                                Process.Lean(EventProcessor)
+                            )
+                            .Profile(x => x.Member, CaptureOptions.SerializedInputParameters)
+                            .Object;
+
+            var _ = proxy.Member;
+
+            Assert.Equal(1, eventCount);
+            Assert.Equal("[]", serializedInput);
+
+            void EventProcessor(IDictionary<string, object> @event)
+            {
+                eventCount++;
+                serializedInput = @event[nameof(CaptureOptions.SerializedInputParameters)];
             }
         }
     }

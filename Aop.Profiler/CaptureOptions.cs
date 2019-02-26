@@ -13,6 +13,7 @@ namespace Aop.Profiler
         ThreadId = 32,
         MethodName = 64,
         DeclaringTypeName = 128,
+        Succinct = DeclaringTypeName | MethodName | Duration,
         Default = StartDateTimeUtc | EndDateTimeUtc | Duration | MethodName | DeclaringTypeName,
         Verbose = StartDateTimeUtc | EndDateTimeUtc | Duration | SerializedInputParameters | SerializedResult | ThreadId | MethodName | DeclaringTypeName
     }
