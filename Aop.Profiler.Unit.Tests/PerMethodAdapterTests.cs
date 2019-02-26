@@ -139,22 +139,20 @@ namespace Aop.Profiler.Unit.Tests
         }
 
         [Fact]
-        public async Task DefaultOptionsYieldExpectedDictionarySize()
+        public void DefaultOptionsYieldExpectedDictionarySize()
         {
             var eventCount = 0;
             var itemCount = 0;
 
-            var proxy = new PerMethodAdapter<IForTestingPurposes>
+            var proxy = new PerMethodAdapter<ForTestingPurposes>
                             (
                                 new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
-                            .Profile(x => x.AsyncAction(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.Verbose)
+                            .Profile(x => x.VirtualMethodCall(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.Verbose)
                             .Object;
 
-            await proxy.AsyncAction(0, "zero");
-
-            Thread.Sleep(1000);
+            proxy.VirtualMethodCall(0, "zero");
 
             Assert.Equal(1, eventCount);
             Assert.Equal(BitFunctions.CountSet((int)CaptureOptions.Verbose), itemCount);
@@ -163,6 +161,34 @@ namespace Aop.Profiler.Unit.Tests
             {
                 eventCount++;
                 itemCount = @event.Count;
+            }
+        }
+
+        [Fact]
+        public async Task AsyncActionDoesNotAllowSerializedResultOption()
+        {
+            var eventCount = 0;
+            var includesResult = true;
+
+            var proxy = new PerMethodAdapter<IForTestingPurposes>
+                (
+                    new ForTestingPurposes(),
+                    Process.Lean(EventProcessor)
+                )
+                .Profile(x => x.AsyncAction(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.SerializedResult)
+                .Object;
+
+            await proxy.AsyncAction(0, "zero");
+
+            Thread.Sleep(1000);
+
+            Assert.Equal(1, eventCount);
+            Assert.False(includesResult);
+
+            void EventProcessor(IDictionary<string, object> @event)
+            {
+                eventCount++;
+                includesResult = @event.ContainsKey(nameof(CaptureOptions.SerializedResult));
             }
         }
 
