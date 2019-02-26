@@ -1,35 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using Castle.DynamicProxy;
 using Aop.Profiler.EventProcessing;
 
 namespace Aop.Profiler
 {
-    public class PerMethodAdapter<T> : IInterceptor, IPerMethodAdapter<T> where T : class
+    public class PerMethodAdapter<T> : BaseAdapter<T>, IPerMethodAdapter<T> where T : class
     {
-        private readonly IProcessProfilerEvents _eventProcessor;
-
-        public T Object { get; }
-
-        private readonly List
-                            <
-                                (
-                                    Expectation expectation,
-                                    Action<CaptureOptions, DateTime, IInvocation>
-                                )
-                            >
-                            _expectations = new List
-                            <
-                                (
-                                    Expectation,
-                                    Action<CaptureOptions, DateTime, IInvocation>
-                                )
-                            >();
-
         public IPerMethodAdapter<T> Profile<TReturn>(Expression<Func<T, Task<TReturn>>> target, CaptureOptions captureOptions)
         {
             return
@@ -37,7 +16,7 @@ namespace Aop.Profiler
                 (
                     target,
                     captureOptions,
-                    BuildAsyncResultEnqueueAction<TReturn>()
+                    BuildDelegateForAsynchronousFunc<TReturn>()
                 );
         }
 
@@ -47,8 +26,8 @@ namespace Aop.Profiler
                 Profile
                 (
                     target,
-                    captureOptions & ~CaptureOptions.SerializedResult,
-                    BuildAsyncEnqueueAction()
+                    captureOptions,
+                    BuildDelegateForAsynchronousAction()
                 );
         }
 
@@ -57,8 +36,8 @@ namespace Aop.Profiler
             Profile
             (
                 target.Body as MethodCallExpression, 
-                captureOptions & ~CaptureOptions.SerializedResult,
-                BuildSynchronousActionEnqueueAction()
+                captureOptions,
+                BuildDelegateForSynchronousAction()
             );
 
             return this;
@@ -71,7 +50,7 @@ namespace Aop.Profiler
                 (
                     target,
                     captureOptions,
-                    BuildSynchronousResultEnqueueAction()
+                    BuildDelegateForSynchronousFunc()
                 );
         }
 
@@ -82,7 +61,7 @@ namespace Aop.Profiler
                 Action<CaptureOptions, DateTime, IInvocation> enqueueAction
             )
         {
-            _expectations
+            Expectations
                 .Add
                 (
                     (
@@ -104,7 +83,7 @@ namespace Aop.Profiler
                 Action<CaptureOptions, DateTime, IInvocation> enqueueAction
             )
         {
-            _expectations
+            Expectations
                 .Add
                 (
                     (
@@ -146,80 +125,9 @@ namespace Aop.Profiler
             return this;
         }
 
-        private Action<CaptureOptions, DateTime, IInvocation> BuildAsyncEnqueueAction()
+        public override void Intercept(IInvocation invocation)
         {
-            Expression
-                <
-                    Action<CaptureOptions, DateTime, IInvocation>
-                >
-                expr =
-                    (captureOptions, start, invocation) => (invocation.ReturnValue as Task)
-                        .ContinueWith
-                        (
-                            i => Enqueue(captureOptions, start, DateTime.UtcNow, invocation, null)
-                        );
-
-            return expr.Compile();
-        }
-
-        private Action<CaptureOptions, DateTime, IInvocation> BuildSynchronousActionEnqueueAction()
-        {
-            Expression
-                <
-                    Action<CaptureOptions, DateTime, IInvocation>
-                >
-                expr =
-                    (captureOptions, start, invocation) => Enqueue(captureOptions, start, DateTime.UtcNow, invocation, null);
-
-            return expr.Compile();
-        }
-
-
-        private void Enqueue(CaptureOptions captureOptions, DateTime startUtc, DateTime endUtc, IInvocation invocation, object returnValue)
-        {
-            try
-            {
-                var @event = EventFactory.Create(captureOptions, startUtc, endUtc, invocation, returnValue);
-
-                _eventProcessor.ProcessEvent(@event);
-            }
-            // ReSharper disable once EmptyGeneralCatchClause
-            catch
-            {
-            }
-        }
-
-        private Action<CaptureOptions, DateTime, IInvocation> BuildAsyncResultEnqueueAction<TReturn>()
-        {
-            Expression
-            <
-                Action<CaptureOptions, DateTime, IInvocation>
-            >
-            expr =
-                (captureOptions, start, invocation) => (invocation.ReturnValue as Task<TReturn>)
-                                                                .ContinueWith
-                                                                (
-                                                                    i => Enqueue(captureOptions, start,DateTime.UtcNow,invocation, i.Result)
-                                                                );
-
-            return expr.Compile();
-        }
-
-        private Action<CaptureOptions, DateTime, IInvocation> BuildSynchronousResultEnqueueAction()
-        {
-            Expression
-                <
-                    Action<CaptureOptions, DateTime, IInvocation>
-                >
-                expr =
-                    (captureOptions, start, invocation) => Enqueue(captureOptions, start,DateTime.UtcNow,invocation,invocation.ReturnValue);
-
-            return expr.Compile();
-        }
-
-        public void Intercept(IInvocation invocation)
-        {
-            var (expectation, enqueue) = _expectations.FirstOrDefault(x => x.expectation.IsHit(invocation));
+            var (expectation, enqueue) = Expectations.FirstOrDefault(x => x.expectation.IsHit(invocation));
 
             if (expectation != null)
             {
@@ -241,20 +149,8 @@ namespace Aop.Profiler
             }
         }
 
-        public PerMethodAdapter(T instance, IProcessProfilerEvents eventProcessor)
+        public PerMethodAdapter(T instance, IProcessProfilerEvents eventProcessor) : base(instance, eventProcessor)
         {
-            _eventProcessor = eventProcessor;
-
-            if (typeof(T).GetTypeInfo().IsInterface)
-            {
-                Object = new ProxyGenerator()
-                    .CreateInterfaceProxyWithTarget(instance, this);
-            }
-            else
-            {
-                Object = new ProxyGenerator()
-                    .CreateClassProxyWithTarget(instance, this);
-            }
         }
     }
 }

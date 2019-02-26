@@ -7,7 +7,7 @@ using Castle.DynamicProxy;
 
 namespace Aop.Profiler
 {
-    internal class Expectation
+    public class Expectation
     {
         private readonly string _methodName;
         private readonly Type _returnType;

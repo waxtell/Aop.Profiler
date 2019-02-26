@@ -161,5 +161,31 @@ namespace Aop.Profiler.Unit.Tests
                 itemCount = @event.Count;
             }
         }
+
+        [Fact]
+        public void SynchronousActionDoesNotAllowSerializedResultOption()
+        {
+            var eventCount = 0;
+            var includesResult = true;
+
+            var proxy = new PerInstanceAdapter<IForTestingPurposes>
+                            (
+                                new ForTestingPurposes(),
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.SerializedResult
+                            )
+                            .Object;
+
+            proxy.SynchronousAction(0, 1, "two");
+
+            Assert.Equal(1, eventCount);
+            Assert.False(includesResult);
+
+            void EventProcessor(IDictionary<string, object> @event)
+            {
+                eventCount++;
+                includesResult = @event.ContainsKey(nameof(CaptureOptions.SerializedResult));
+            }
+        }
     }
 }
