@@ -9,7 +9,7 @@ namespace Aop.Profiler
 {
     public class PerMethodAdapter<T> : BaseAdapter<T>, IPerMethodAdapter<T> where T : class
     {
-        public IPerMethodAdapter<T> Profile<TReturn>(Expression<Func<T, Task<TReturn>>> target, CaptureOptions captureOptions)
+        public IPerMethodAdapter<T> Profile<TReturn>(Expression<Func<T, Task<TReturn>>> target, CaptureOptions captureOptions = CaptureOptions.Default)
         {
             return
                 Profile
@@ -20,7 +20,7 @@ namespace Aop.Profiler
                 );
         }
 
-        public IPerMethodAdapter<T> Profile(Expression<Func<T, Task>> target, CaptureOptions captureOptions)
+        public IPerMethodAdapter<T> Profile(Expression<Func<T, Task>> target, CaptureOptions captureOptions = CaptureOptions.Default)
         {
             return
                 Profile
@@ -31,7 +31,7 @@ namespace Aop.Profiler
                 );
         }
 
-        public IPerMethodAdapter<T> Profile(Expression<Action<T>> target, CaptureOptions captureOptions)
+        public IPerMethodAdapter<T> Profile(Expression<Action<T>> target, CaptureOptions captureOptions = CaptureOptions.Default)
         {
             Profile
             (
@@ -43,7 +43,7 @@ namespace Aop.Profiler
             return this;
         }
 
-        public IPerMethodAdapter<T> Profile<TReturn>(Expression<Func<T, TReturn>> target, CaptureOptions captureOptions)
+        public IPerMethodAdapter<T> Profile<TReturn>(Expression<Func<T, TReturn>> target, CaptureOptions captureOptions = CaptureOptions.Default)
         {
             return
                 Profile

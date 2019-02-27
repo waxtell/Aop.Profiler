@@ -160,6 +160,31 @@ namespace Aop.Profiler.Unit.Tests
         }
 
         [Fact]
+        public void DefaultOptionsYieldExpectedDictionarySize()
+        {
+            var eventCount = 0;
+            var itemCount = 0;
+
+            var proxy = new PerMethodAdapter<ForTestingPurposes>
+                (
+                    Process.Lean(EventProcessor)
+                )
+                .Profile(x => x.VirtualMethodCall(It.IsAny<int>(), It.IsAny<string>()))
+                .Adapt(new ForTestingPurposes());
+
+            proxy.VirtualMethodCall(0, "zero");
+
+            Assert.Equal(1, eventCount);
+            Assert.Equal(BitFunctions.CountSet((int)CaptureOptions.Default), itemCount);
+
+            void EventProcessor(IDictionary<string, object> @event)
+            {
+                eventCount++;
+                itemCount = @event.Count;
+            }
+        }
+
+        [Fact]
         public async Task AsyncActionDoesNotAllowSerializedResultOption()
         {
             var eventCount = 0;
