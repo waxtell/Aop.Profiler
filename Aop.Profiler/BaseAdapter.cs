@@ -16,8 +16,6 @@ namespace Aop.Profiler
     {
         protected readonly IProcessProfilerEvents EventProcessor;
 
-        public T Object { get; }
-
         protected readonly List<(Expectation expectation, EnqueueDelegate)> Expectations = new List<(Expectation,EnqueueDelegate)>();
 
         protected void Enqueue(CaptureOptions captureOptions, DateTime startUtc, DateTime endUtc, IInvocation invocation, object returnValue)
@@ -127,20 +125,17 @@ namespace Aop.Profiler
 
         public abstract void Intercept(IInvocation invocation);
 
-        protected BaseAdapter(T instance, IProcessProfilerEvents eventProcessor)
+        public T Adapt(T instance)
+        {
+            return
+                typeof(T).GetTypeInfo().IsInterface
+                    ? new ProxyGenerator().CreateInterfaceProxyWithTarget(instance, this)
+                    : new ProxyGenerator().CreateClassProxyWithTarget(instance, this);
+        }
+
+        protected BaseAdapter(IProcessProfilerEvents eventProcessor)
         {
             EventProcessor = eventProcessor;
-
-            if (typeof(T).GetTypeInfo().IsInterface)
-            {
-                Object = new ProxyGenerator()
-                    .CreateInterfaceProxyWithTarget(instance, this);
-            }
-            else
-            {
-                Object = new ProxyGenerator()
-                    .CreateClassProxyWithTarget(instance, this);
-            }
         }
     }
 }

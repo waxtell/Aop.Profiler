@@ -16,11 +16,11 @@ namespace Aop.Profiler.Unit.Tests
             object serializedResult = null;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor),
-                CaptureOptions.SerializedResult
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.SerializedResult
+                            )
+                            .Adapt(new ForTestingPurposes());
 
             var result = await proxy.AsyncMethodCall(1, "one");
 
@@ -43,11 +43,11 @@ namespace Aop.Profiler.Unit.Tests
             object methodName = null;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor),
-                CaptureOptions.MethodName
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.MethodName
+                            )
+                            .Adapt(new ForTestingPurposes());
 
             proxy.MethodCall(0, "zero");
 
@@ -68,11 +68,11 @@ namespace Aop.Profiler.Unit.Tests
             object typeName = null;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor),
-                CaptureOptions.DeclaringTypeName
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.DeclaringTypeName
+                            )
+                            .Adapt(new ForTestingPurposes());
 
             proxy.MethodCall(0, "zero");
 
@@ -93,11 +93,11 @@ namespace Aop.Profiler.Unit.Tests
             object serializedResult = null;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor),
-                CaptureOptions.SerializedResult
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.SerializedResult
+                            )
+                            .Adapt(new ForTestingPurposes());
 
             var result = proxy.MethodCall(0, "zero");
 
@@ -118,11 +118,11 @@ namespace Aop.Profiler.Unit.Tests
             object serializedInput = null;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor),
-                CaptureOptions.SerializedInputParameters
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor),
+                                CaptureOptions.SerializedInputParameters
+                            )
+                            .Adapt(new ForTestingPurposes());
 
             var _ = proxy.Member;
 
@@ -143,10 +143,11 @@ namespace Aop.Profiler.Unit.Tests
             var itemCount = 0;
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
-            (
-                new ForTestingPurposes(),
-                Process.Lean(EventProcessor)
-            ).Object;
+                            (
+                                Process.Lean(EventProcessor)
+                            )
+                            .Adapt(new ForTestingPurposes());
+
 
             await proxy.AsyncAction(0, "zero");
 
@@ -170,11 +171,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerInstanceAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor),
                                 CaptureOptions.SerializedResult
                             )
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             proxy.SynchronousAction(0, 1, "two");
 

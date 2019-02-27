@@ -1,7 +1,6 @@
 ﻿namespace Aop.Profiler
 {
-    public interface IPerInstanceAdapter<out T> where T : class
+    public interface IPerInstanceAdapter<T> : IProfilerAdapter<T> where T : class
     {
-        T Object { get; }
     }
 }

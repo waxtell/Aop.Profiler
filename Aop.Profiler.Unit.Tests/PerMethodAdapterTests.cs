@@ -16,10 +16,9 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             proxy.MethodCall(0, "zero");
 
@@ -39,11 +38,11 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.MethodCall(0,"zero"), CaptureOptions.MethodName)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
+
 
             proxy.MethodCall(0, "zero");
 
@@ -65,11 +64,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.MethodCall(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.SerializedResult)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             var result = proxy.MethodCall(7, "eight");
 
@@ -92,11 +90,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.MethodCall(0, "zero"), CaptureOptions.DeclaringTypeName)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             proxy.MethodCall(0, "zero");
 
@@ -118,11 +115,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.AsyncMethodCall(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.SerializedResult)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             var result = await proxy.AsyncMethodCall(1, "one");
 
@@ -146,11 +142,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<ForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.VirtualMethodCall(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.Verbose)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             proxy.VirtualMethodCall(0, "zero");
 
@@ -172,11 +167,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                 (
-                    new ForTestingPurposes(),
                     Process.Lean(EventProcessor)
                 )
                 .Profile(x => x.AsyncAction(It.IsAny<int>(), It.IsAny<string>()), CaptureOptions.SerializedResult)
-                .Object;
+                .Adapt(new ForTestingPurposes());
 
             await proxy.AsyncAction(0, "zero");
 
@@ -200,11 +194,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.SynchronousAction(It.IsAny<int>(), It.IsAny<int>(),It.IsNotNull<string>()), CaptureOptions.SerializedResult)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             proxy.SynchronousAction(0, 1, "two");
 
@@ -226,11 +219,10 @@ namespace Aop.Profiler.Unit.Tests
 
             var proxy = new PerMethodAdapter<IForTestingPurposes>
                             (
-                                new ForTestingPurposes(),
                                 Process.Lean(EventProcessor)
                             )
                             .Profile(x => x.Member, CaptureOptions.SerializedInputParameters)
-                            .Object;
+                            .Adapt(new ForTestingPurposes());
 
             var _ = proxy.Member;
 

@@ -149,7 +149,7 @@ namespace Aop.Profiler
             }
         }
 
-        public PerMethodAdapter(T instance, IProcessProfilerEvents eventProcessor) : base(instance, eventProcessor)
+        public PerMethodAdapter(IProcessProfilerEvents eventProcessor) : base(eventProcessor)
         {
         }
     }

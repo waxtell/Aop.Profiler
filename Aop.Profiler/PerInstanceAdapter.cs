@@ -84,8 +84,8 @@ namespace Aop.Profiler
                 );
         }
 
-        public PerInstanceAdapter(T instance, IProcessProfilerEvents eventProcessor, CaptureOptions captureOptions = CaptureOptions.Default)
-        : base(instance, eventProcessor)
+        public PerInstanceAdapter(IProcessProfilerEvents eventProcessor, CaptureOptions captureOptions = CaptureOptions.Default)
+        : base(eventProcessor)
         {
             _captureOptions = captureOptions;
         }
