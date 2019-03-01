@@ -121,11 +121,11 @@ namespace Aop.Profiler.EventProcessing
             _timer.Start(interval);
         }
 
-        public void ProcessEvent(IDictionary<string,object> logEvent)
+        public void ProcessEvent(IDictionary<string,object> @event)
         {
-            if (logEvent == null)
+            if (@event == null)
             {
-                throw new ArgumentNullException(nameof(logEvent));
+                throw new ArgumentNullException(nameof(@event));
             }
 
             // ReSharper disable once InconsistentlySynchronizedField
@@ -134,7 +134,7 @@ namespace Aop.Profiler.EventProcessing
                 return;
             }
 
-            _queue.TryEnqueue(logEvent);
+            _queue.TryEnqueue(@event);
         }
     }
 }
