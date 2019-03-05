@@ -7,9 +7,11 @@
     <PackageProjectUrl>https://github.com/waxtell/Aop.Profiler</PackageProjectUrl>
     <RepositoryUrl>https://github.com/waxtell/Aop.Profiler.git</RepositoryUrl>
     <PackageTags>Profiler Aspect Oriented Programming</PackageTags>
-    <PackageReleaseNotes>[1.0.0] Initial release</PackageReleaseNotes>
+    <PackageReleaseNotes>[1.0.0] Initial release
+[1.1.0] Refactored batch processor to provide more custom implementation options</PackageReleaseNotes>
     <Authors>Will Axtell</Authors>
     <Company>Will Axtell</Company>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
